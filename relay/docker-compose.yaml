@@ -1,0 +1,16 @@
+name: paseo-peers-relay
+services:
+  relay:
+    build: .
+    image: paseo-peers-relay:local
+    container_name: paseo-peers-relay
+    restart: unless-stopped
+    user: "1000:1000"
+    env_file: .env
+    ports:
+      - 6767:6767
+    volumes:
+      - ./data:/data
+    labels:
+      # Built locally; nothing for Watchtower to pull.
+      - com.centurylinklabs.watchtower.enable=false

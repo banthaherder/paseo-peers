@@ -1,0 +1,15 @@
+{
+  "name": "paseo-peers-relay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted store-and-forward relay for the Paseo Peers plugin. Zero runtime dependencies.",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "../plugin/node_modules/.bin/tsx test/e2e.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}
