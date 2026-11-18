@@ -1,0 +1,75 @@
+.gitignore
+  s_09e68af666222a::t_32fe09dd24b831 1-5
+LICENSE
+  s_09e68af666222a::t_15563742b97d3d 1-21
+README.md
+  s_09e68af666222a::t_e55042f58a6ce4 1-87
+plugin/OVERVIEW.md
+  s_09e68af666222a::t_926d99d1d98dda 1-23
+plugin/client/inbox.tsx
+  s_09e68af666222a::t_adaa2904c1071c 1-233
+plugin/client/kit.tsx
+  s_09e68af666222a::t_5e1920c584596f 1-126
+plugin/client/modals.tsx
+  s_09e68af666222a::t_c817a46b19f197 1-219
+plugin/client/settings.tsx
+  s_09e68af666222a::t_b6940e8486f5e7 1-96
+plugin/client/thread.tsx
+  s_09e68af666222a::t_cc88c42df95eb9 1-273
+plugin/index.client.tsx
+  s_09e68af666222a::t_36d4cca8706ac5 1-55
+plugin/index.server.ts
+  s_09e68af666222a::t_1b6ffd0fa11d34 1-131
+plugin/package-lock.json
+  s_09e68af666222a::t_83eb10a59b5595 1-4652
+plugin/package.json
+  s_09e68af666222a::t_b7a4be44f801d2 1-32
+plugin/paseo-plugin.json
+  s_09e68af666222a::t_3c5c2fe20654fc 1-8
+plugin/server/crypto.ts
+  s_09e68af666222a::t_af8eeae9564229 1-140
+plugin/server/relay-client.ts
+  s_09e68af666222a::t_34e3bf76da30c4 1-116
+plugin/server/service.ts
+  s_09e68af666222a::t_81bd6d42edad09 1-738
+plugin/server/store.ts
+  s_09e68af666222a::t_432a860a5ac29a 1-122
+plugin/server/tools.ts
+  s_09e68af666222a::t_00345120aa97b0 1-73
+plugin/shared/contracts.ts
+  s_09e68af666222a::t_3bb67743bf9b71 1-164
+plugin/tsconfig.json
+  s_09e68af666222a::t_394f708864974e 1-24
+relay/.dockerignore
+  s_09e68af666222a::t_471a4ff4606e3f 1-4
+relay/.env.example
+  s_09e68af666222a::t_44e41da6d50c01 1-7
+relay/Dockerfile
+  s_09e68af666222a::t_051475eab0e6e3 1-10
+relay/README.md
+  s_09e68af666222a::t_40fd8631726fab 1-65
+relay/docker-compose.yaml
+  s_09e68af666222a::t_682065f2a54452 1-16
+relay/package.json
+  s_09e68af666222a::t_be09e225e9510c 1-15
+relay/server.mjs
+  s_09e68af666222a::t_2eb5a0fff35617 1-337
+relay/test/e2e.ts
+  s_09e68af666222a::t_066fcc3f01a91a 1-145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7cef9b9ed359b43536118bbee258308697c71ce7",
+  "prompts": {},
+  "sessions": {
+    "s_09e68af666222a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c14af89-9166-4496-8c4f-4de3ad952bc7",
+        "model": "unknown"
+      },
+      "human_author": "banthaherder <25264303+banthaherder@users.noreply.github.com>"
+    }
+  }
+}
