@@ -1,0 +1,23 @@
+plugin/client/modals.tsx
+  s_09e68af666222a::t_14c53fedbd5b9b 2,10-95,110,117,127-136,138-174,178-188
+plugin/server/service.ts
+  s_09e68af666222a::t_64a3b495f8ec92 3,64-72,729-733,737,739-748
+plugin/shared/contracts.ts
+  s_09e68af666222a::t_f9ac3ce1f9d0ee 149,152-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd23e2330bf2a4a251dc0c402dfa8b1b889f1202",
+  "prompts": {},
+  "sessions": {
+    "s_09e68af666222a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c14af89-9166-4496-8c4f-4de3ad952bc7",
+        "model": "unknown"
+      },
+      "human_author": "banthaherder <25264303+banthaherder@users.noreply.github.com>"
+    }
+  }
+}
