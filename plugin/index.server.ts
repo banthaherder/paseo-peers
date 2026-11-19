@@ -44,11 +44,20 @@ export default function contribute(server: PluginServerContext) {
 
   server.handle(getState, async (_input, { paseo }) => (await svc(paseo)).publicState());
 
+  // A subscription closes as soon as its handler's promise settles, so stay pending until the
+  // client releases it (signal aborts). Resolving early would deliver only the first snapshot.
   server.handle(watchState, async (_input, { paseo, push, signal }) => {
     const service = await svc(paseo);
-    await push({ state: service.publicState() });
     const unsubscribe = service.subscribe((state) => void push({ state }).catch(() => {}));
-    signal.addEventListener("abort", unsubscribe, { once: true });
+    try {
+      await push({ state: service.publicState() });
+      await new Promise<void>((resolve) => {
+        if (signal.aborted) resolve();
+        else signal.addEventListener("abort", () => resolve(), { once: true });
+      });
+    } finally {
+      unsubscribe();
+    }
   });
 
   server.handle(configure, async (input, { paseo }) => (await svc(paseo)).configure(input));
