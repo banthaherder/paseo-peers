@@ -1,0 +1,27 @@
+plugin/client/settings.tsx
+  s_09e68af666222a::t_34a0e466225964 55
+plugin/server/service.ts
+  s_09e68af666222a::t_da34855041fdc5 41-48,198,201-207,209-220,222-223,246-248
+plugin/server/store.ts
+  s_09e68af666222a::t_9e01c8bdf4fc9d 97-98
+relay/server.mjs
+  s_09e68af666222a::t_2f131fdfc0ddd5 189
+relay/test/e2e.ts
+  s_09e68af666222a::t_2b6af733487cfc 76-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e813f78779a586b3eba73de35297b052e411a180",
+  "prompts": {},
+  "sessions": {
+    "s_09e68af666222a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c14af89-9166-4496-8c4f-4de3ad952bc7",
+        "model": "unknown"
+      },
+      "human_author": "banthaherder <25264303+banthaherder@users.noreply.github.com>"
+    }
+  }
+}
