@@ -1,0 +1,23 @@
+plugin/index.server.ts
+  s_09e68af666222a::t_3a9d1e4f87f40d 1,21,24-25,27-28
+plugin/server/relay-client.ts
+  s_09e68af666222a::t_b969db29bcb37e 40-71,101,120
+plugin/server/tls.ts
+  s_09e68af666222a::t_32e667c9bc0ad1 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "24e274d4ffb28811da0c0dc3402625206394d0b0",
+  "prompts": {},
+  "sessions": {
+    "s_09e68af666222a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c14af89-9166-4496-8c4f-4de3ad952bc7",
+        "model": "unknown"
+      },
+      "human_author": "banthaherder <25264303+banthaherder@users.noreply.github.com>"
+    }
+  }
+}
