@@ -1,6 +1,4 @@
-import type { PluginHandlerContext } from "@getpaseo/plugin/server";
-type PaseoApi = PluginHandlerContext["paseo"];
-import type { PluginServerContext } from "@getpaseo/plugin/server";
+import type { PluginHandlerContext, PluginServerContext } from "@getpaseo/plugin/server";
 import {
   acceptInvite,
   cancelInvite,
@@ -20,9 +18,14 @@ import {
 } from "./shared/contracts";
 import { PeerService } from "./server/service";
 import { Store } from "./server/store";
+import { trustSystemCertificates } from "./server/tls";
 import { createAgentTools } from "./server/tools";
 
+type PaseoApi = PluginHandlerContext["paseo"];
+
 export default function contribute(server: PluginServerContext) {
+  const added = trustSystemCertificates();
+  if (added > 0) console.log(`[paseo-peers] trusting ${added} extra root certificate(s) from the system store`);
   let stopped = false;
   const ready: Promise<PeerService> = Store.open().then((store) => {
     const service = new PeerService(store);

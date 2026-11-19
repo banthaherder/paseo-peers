@@ -37,6 +37,38 @@ function deadline(ms: number, parent?: AbortSignal): { signal: AbortSignal; clea
   };
 }
 
+const UNTRUSTED_CERT_CODES = new Set([
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "UNABLE_TO_GET_ISSUER_CERT",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "CERT_UNTRUSTED",
+]);
+
+/** Turns fetch's generic "fetch failed" into the underlying reason. */
+export function describeNetworkError(error: unknown, baseUrl: string): string {
+  const err = error as { name?: string; message?: string; code?: string; cause?: { code?: string; message?: string } };
+  const code = err?.cause?.code ?? err?.code;
+  let host = baseUrl;
+  try {
+    host = new URL(baseUrl).host;
+  } catch {}
+  if (err?.name === "AbortError" || code === "ETIMEDOUT" || code === "UND_ERR_CONNECT_TIMEOUT") {
+    return `timed out reaching ${host}`;
+  }
+  if (code === "ENOTFOUND" || code === "EAI_AGAIN") return `can't resolve ${host}. Check the relay URL and this machine's DNS`;
+  if (code === "ECONNREFUSED") return `${host} refused the connection`;
+  if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") return `the connection to ${host} was cut off`;
+  if (code && UNTRUSTED_CERT_CODES.has(code)) {
+    return `${host}'s TLS certificate isn't trusted on this machine (${code}). A VPN or security tool may be inspecting HTTPS; its root certificate needs to be in the system keychain`;
+  }
+  if (code === "CERT_HAS_EXPIRED") return `${host}'s TLS certificate has expired`;
+  if (code === "ERR_TLS_CERT_ALTNAME_INVALID") return `${host}'s TLS certificate doesn't match its name`;
+  const detail = err?.cause?.message ?? err?.message ?? String(error);
+  return code ? `${detail} (${code})` : detail;
+}
+
 export function normalizeRelayUrl(input: string): string {
   let url = input.trim();
   if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
@@ -66,7 +98,7 @@ export class RelayClient {
       parsed = await response.json().catch(() => null);
     } catch (error) {
       if (options.signal?.aborted) throw error;
-      throw new RelayError(`Relay unreachable: ${(error as Error).message}`, null);
+      throw new RelayError(`Relay unreachable: ${describeNetworkError(error, this.baseUrl)}`, null);
     } finally {
       timeout.clear();
     }
@@ -85,7 +117,7 @@ export class RelayClient {
       response = await fetch(`${this.baseUrl}/v1/health`, { signal: timeout.signal });
       body = (await response.json().catch(() => null)) as { service?: string } | null;
     } catch (error) {
-      throw new RelayError(`Relay unreachable: ${(error as Error).message}`, null);
+      throw new RelayError(`Relay unreachable: ${describeNetworkError(error, this.baseUrl)}`, null);
     } finally {
       timeout.clear();
     }
