@@ -1,11 +1,97 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import { useRpc } from "@getpaseo/plugin/client";
+import { useRpc, useWorkspace } from "@getpaseo/plugin/client";
 import { Icon, Modal, TextInput, copyText, useToast } from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { acceptInvite, createInvite, listAgents, type AgentSummary } from "../shared/contracts";
 import { Button, Label, errorText, inputStyle } from "./kit";
+
+function Chip({ theme, icon, text }: { theme: PluginTheme; icon: string; text: string }) {
+  const c = theme.colors;
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+        backgroundColor: c.surface2,
+        borderWidth: 1,
+        borderColor: c.border,
+        maxWidth: 220,
+      }}
+    >
+      <Icon name={icon} size={11} color={c.foregroundMuted} />
+      <Text style={{ color: c.foreground, fontSize: 11 }} numberOfLines={1}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+const statusText = (status: string) => (status === "running" ? "busy" : status);
+
+/** One agent, identified by its workspace, project, branch and workspace labels. Hides itself when it doesn't match `query`. */
+function AgentRow(props: { theme: PluginTheme; agent: AgentSummary; query: string; pending: boolean; disabled: boolean; onPress(): void }) {
+  const { theme, agent } = props;
+  const c = theme.colors;
+  const labels = useWorkspace(agent.workspaceId ?? "none", (workspace) => workspace.labels) ?? [];
+  const heading = agent.workspaceName || agent.title;
+  const subtitle = agent.workspaceName && agent.workspaceName !== agent.title ? agent.title : null;
+  const query = props.query.trim().toLowerCase();
+  if (query) {
+    const haystack = [heading, agent.title, agent.projectName, agent.branch, agent.cwd, ...labels].join(" ").toLowerCase();
+    if (!query.split(/\s+/).every((word) => haystack.includes(word))) return null;
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${heading}${agent.projectName ? `, project ${agent.projectName}` : ""}${labels.length ? `, labels ${labels.join(", ")}` : ""}, ${statusText(agent.status)}`}
+      disabled={props.disabled}
+      onPress={props.onPress}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        padding: 10,
+        borderRadius: 8,
+        backgroundColor: pressed ? c.surface2 : c.surface1,
+        borderWidth: 1,
+        borderColor: c.border,
+        opacity: agent.status === "closed" ? 0.75 : 1,
+      })}
+    >
+      <Icon name="Bot" size={16} color={c.foregroundMuted} />
+      <View style={{ flex: 1, gap: 4 }}>
+        <Text style={{ color: c.foreground, fontSize: 14, fontWeight: "500" }} numberOfLines={1}>
+          {heading}
+        </Text>
+        {subtitle ? (
+          <Text style={{ color: c.foregroundMuted, fontSize: 12 }} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+          {agent.projectName ? <Chip theme={theme} icon="FolderGit2" text={agent.projectName} /> : null}
+          {agent.branch ? <Chip theme={theme} icon="GitBranch" text={agent.branch} /> : null}
+          {labels.map((label) => (
+            <Chip key={label} theme={theme} icon="Tag" text={label} />
+          ))}
+          {agent.cwd ? (
+            <Text style={{ color: c.foregroundMuted, fontSize: 11, flexShrink: 1 }} numberOfLines={1}>
+              {agent.cwd}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <Text style={{ color: agent.status === "running" ? c.statusWarning : c.foregroundMuted, fontSize: 12 }}>{statusText(agent.status)}</Text>
+      {props.pending ? <ActivityIndicator size="small" color={c.foregroundMuted} /> : null}
+    </Pressable>
+  );
+}
 
 /** Picks one of this host's agents. `allowNone` adds an "Off" row (for auto-delivery). */
 export function AgentPickerModal(props: {
@@ -21,12 +107,14 @@ export function AgentPickerModal(props: {
   const fetchAgents = useRpc(listAgents);
   const toast = useToast();
   const [pending, setPending] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const agents = useQuery({ queryKey: ["peers-agents"], queryFn: () => fetchAgents({}), enabled: props.open, staleTime: 2000 });
 
   async function pick(agent: AgentSummary | null) {
     setPending(agent?.id ?? "none");
     try {
       await props.onPick(agent);
+      setQuery("");
       props.onClose();
     } catch (error) {
       toast.error(errorText(error));
@@ -35,50 +123,69 @@ export function AgentPickerModal(props: {
     }
   }
 
-  const row = (key: string, title: string, subtitle: string | null, status: string | null, onPress: () => void) => (
-    <Pressable
-      key={key}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      disabled={pending !== null}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        padding: 10,
-        borderRadius: 8,
-        backgroundColor: pressed ? c.surface2 : c.surface1,
-        borderWidth: 1,
-        borderColor: c.border,
-      })}
-    >
-      <Icon name={key === "none" ? "Hand" : "Bot"} size={16} color={c.foregroundMuted} />
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ color: c.foreground, fontSize: 14 }} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={{ color: c.foregroundMuted, fontSize: 12 }} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      {status ? (
-        <Text style={{ color: status === "running" ? c.statusWarning : c.foregroundMuted, fontSize: 12 }}>{status === "running" ? "busy" : status}</Text>
-      ) : null}
-      {pending === key ? <ActivityIndicator size="small" color={c.foregroundMuted} /> : null}
-    </Pressable>
-  );
-
   return (
-    <Modal title={props.title} open={props.open} onOpenChange={(open) => !open && props.onClose()}>
+    <Modal
+      title={props.title}
+      open={props.open}
+      onOpenChange={(open) => {
+        if (!open) {
+          setQuery("");
+          props.onClose();
+        }
+      }}
+    >
       <Modal.Content>
-        {props.allowNone ? row("none", "Off: ask me each time", "Messages wait in the inbox", null, () => void pick(null)) : null}
+        {props.allowNone ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Off: ask me each time"
+            disabled={pending !== null}
+            onPress={() => void pick(null)}
+            style={({ pressed }) => ({
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              padding: 10,
+              borderRadius: 8,
+              backgroundColor: pressed ? c.surface2 : c.surface1,
+              borderWidth: 1,
+              borderColor: c.border,
+            })}
+          >
+            <Icon name="Hand" size={16} color={c.foregroundMuted} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ color: c.foreground, fontSize: 14 }}>Off: ask me each time</Text>
+              <Text style={{ color: c.foregroundMuted, fontSize: 12 }}>Messages wait in the inbox</Text>
+            </View>
+            {pending === "none" ? <ActivityIndicator size="small" color={c.foregroundMuted} /> : null}
+          </Pressable>
+        ) : null}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Icon name="Search" size={14} color={c.foregroundMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Filter by name, project, branch, label or folder"
+            placeholderTextColor={c.foregroundMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[inputStyle(theme), { flex: 1 }]}
+          />
+        </View>
         {agents.isLoading ? <ActivityIndicator color={c.foregroundMuted} /> : null}
         {agents.error ? <Text style={{ color: c.statusDanger }}>{errorText(agents.error)}</Text> : null}
         {agents.data?.agents.length === 0 ? <Text style={{ color: c.foregroundMuted }}>No active agents on this host.</Text> : null}
-        {agents.data?.agents.map((agent) => row(agent.id, agent.title, agent.cwd, agent.status, () => void pick(agent)))}
+        {agents.data?.agents.map((agent) => (
+          <AgentRow
+            key={agent.id}
+            theme={theme}
+            agent={agent}
+            query={query}
+            pending={pending === agent.id}
+            disabled={pending !== null}
+            onPress={() => void pick(agent)}
+          />
+        ))}
         {!props.allowNone ? (
           <Text style={{ color: c.foregroundMuted, fontSize: 12 }}>A busy agent gets the message as soon as its current turn ends.</Text>
         ) : null}

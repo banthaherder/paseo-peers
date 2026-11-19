@@ -1,5 +1,6 @@
 import type { PluginHandlerContext } from "@getpaseo/plugin/server";
 type PaseoApi = PluginHandlerContext["paseo"];
+import { homedir } from "node:os";
 import { z } from "zod";
 import type { AgentSummary, PeersState, RelayStatus } from "../shared/contracts";
 import { fingerprint, isPublicKey, newId, open, seal } from "./crypto";
@@ -60,6 +61,15 @@ type AgentRecord = {
   provider?: string | null;
   archivedAt?: string | null;
   background?: boolean | null;
+  workspaceId?: string | null;
+  lastUserMessageAt?: string | null;
+  updatedAt?: string | null;
+};
+
+type AgentProjectPlacement = {
+  projectName?: string | null;
+  workspaceName?: string | null;
+  checkout?: { currentBranch?: string | null } | null;
 };
 
 export class PeerService {
@@ -716,16 +726,26 @@ export class PeerService {
 
   async listAgents(): Promise<AgentSummary[]> {
     const { entries } = await this.api().agents.list();
-    return (entries as Array<{ agent: AgentRecord }>)
-      .map(({ agent }) => agent)
-      .filter((agent) => !agent.archivedAt && !agent.background)
-      .map((agent) => ({
+    const home = homedir();
+    const rank: Record<string, number> = { running: 0, idle: 0, initializing: 1, error: 2, closed: 3 };
+    return (entries as Array<{ agent: AgentRecord; project?: AgentProjectPlacement | null }>)
+      .filter(({ agent }) => !agent.archivedAt && !agent.background)
+      .map(({ agent, project }) => ({
         id: agent.id,
         title: agent.title || "Untitled agent",
         status: agent.status ?? "unknown",
-        cwd: agent.cwd ?? null,
+        cwd: agent.cwd ? (agent.cwd === home || agent.cwd.startsWith(`${home}/`) ? `~${agent.cwd.slice(home.length)}` : agent.cwd) : null,
         provider: agent.provider ?? null,
-      }));
+        workspaceId: agent.workspaceId ?? null,
+        workspaceName: project?.workspaceName || null,
+        projectName: project?.projectName || null,
+        branch: project?.checkout?.currentBranch || null,
+        lastActivityAt: agent.lastUserMessageAt ?? agent.updatedAt ?? null,
+      }))
+      .sort(
+        (a, b) =>
+          (rank[a.status] ?? 2) - (rank[b.status] ?? 2) || (b.lastActivityAt ?? "").localeCompare(a.lastActivityAt ?? ""),
+      );
   }
 
   /** The text of an agent's latest reply, for forwarding with "/peer name" and no message. */

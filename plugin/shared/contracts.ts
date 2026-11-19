@@ -146,8 +146,14 @@ export const agentSummarySchema = z.object({
   id: z.string(),
   title: z.string(),
   status: z.string(),
+  /** Working directory with the home directory shortened to "~". */
   cwd: z.string().nullable(),
   provider: z.string().nullable(),
+  workspaceId: z.string().nullable(),
+  workspaceName: z.string().nullable(),
+  projectName: z.string().nullable(),
+  branch: z.string().nullable(),
+  lastActivityAt: z.string().nullable(),
 });
 export type AgentSummary = z.infer<typeof agentSummarySchema>;
 
