@@ -1,0 +1,19 @@
+plugin/index.server.ts
+  s_09e68af666222a::t_bfecbae80c7ce3 47-48,52-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5b9ae9334709ed125c7ae20c5b197c975b68d333",
+  "prompts": {},
+  "sessions": {
+    "s_09e68af666222a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c14af89-9166-4496-8c4f-4de3ad952bc7",
+        "model": "unknown"
+      },
+      "human_author": "banthaherder <25264303+banthaherder@users.noreply.github.com>"
+    }
+  }
+}
