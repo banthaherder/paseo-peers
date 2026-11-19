@@ -186,6 +186,7 @@ async function handleInvites(req, body) {
 async function handleRegister(req, key, body) {
   const input = parseJson(body);
   const label = String(input.label ?? "").slice(0, 80);
+  if (req.headers.authorization && !isAdmin(req)) throw new HttpError(401, "admin token rejected");
   if (state.keys[key]) return { registered: true, already: true };
   if (!isAdmin(req)) {
     const invite = String(input.invite ?? "");

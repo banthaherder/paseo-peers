@@ -94,6 +94,8 @@ export class Store {
         seen: [],
       };
     }
+    // Older versions could save an invite code pasted into the admin token field.
+    if (state.relay?.adminToken?.startsWith("paseo-peer:")) state.relay.adminToken = null;
     const store = new Store(path, state);
     await store.save();
     return store;

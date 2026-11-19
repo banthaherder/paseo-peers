@@ -73,6 +73,17 @@ try {
   owner.attach(ownerPaseo.api);
   friend.attach(friendPaseo.api);
 
+  // A wrong admin token, or an invite code pasted into the admin field, fails clearly and saves nothing.
+  await owner.configure({ name: "Alice", relayUrl, adminToken: "wrong-admin-token-000000" }).then(
+    () => check("wrong admin token rejected", false),
+    (e) => check("wrong admin token rejected with admin-token message", /admin token/.test((e as Error).message)),
+  );
+  check("failed save left relay and name unset", owner.publicState().relay.url === null && owner.publicState().profile.name === "");
+  await owner.configure({ adminToken: "paseo-peer:eyJ2IjoxfQ" }).then(
+    () => check("invite code in admin field rejected", false),
+    (e) => check("invite code in admin field rejected", /invite code/.test((e as Error).message)),
+  );
+
   // Owner configures the relay with the admin token, then mints an invite.
   await owner.configure({ name: "Alice", relayUrl, adminToken: ADMIN });
   check("owner registered", owner.publicState().relay.registered);

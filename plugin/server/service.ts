@@ -38,6 +38,14 @@ const inviteCodeSchema = z.object({
   b: z.string().refine(isPublicKey),
 });
 
+/** A 401/403 while using the admin token means the token is wrong; say so instead of the relay's invite wording. */
+function adminTokenError(error: unknown): unknown {
+  if (error instanceof RelayError && (error.status === 401 || error.status === 403)) {
+    return new Error("The relay rejected the admin token. It must match RELAY_ADMIN_TOKEN on the relay. (Invite codes go on the Peers screen under Join with invite code.)");
+  }
+  return error;
+}
+
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, ms);
@@ -187,21 +195,32 @@ export class PeerService {
 
   // ---------------------------------------------------------------- configuration
 
+  /** Validates everything against the relay first and only then saves, so a failed Save changes nothing. */
   async configure(input: { name?: string; relayUrl?: string; adminToken?: string }): Promise<PeersState> {
     const s = this.store.state;
-    if (input.name !== undefined) s.profile.name = input.name;
-    if (input.adminToken !== undefined) s.relay.adminToken = input.adminToken || null;
-    if (input.relayUrl !== undefined) {
-      const url = input.relayUrl ? normalizeRelayUrl(input.relayUrl) : null;
-      if (url && url !== s.relay.url) await new RelayClient(url, s.identity).health();
-      if (url !== s.relay.url) s.relay.registeredUrl = null;
-      s.relay.url = url;
+    const name = input.name !== undefined ? input.name : s.profile.name;
+    let adminToken = s.relay.adminToken;
+    if (input.adminToken !== undefined) {
+      if (input.adminToken.startsWith(INVITE_PREFIX)) {
+        throw new Error("That's an invite code, not the relay admin token. Paste invite codes on the Peers screen with Join with invite code.");
+      }
+      adminToken = input.adminToken || null;
     }
-    if (s.relay.url && s.relay.adminToken && !this.registered) {
-      const relay = this.relay()!;
-      await relay.register({ adminToken: s.relay.adminToken, label: s.profile.name || "owner" });
-      s.relay.registeredUrl = s.relay.url;
+    let url = s.relay.url;
+    if (input.relayUrl !== undefined) url = input.relayUrl ? normalizeRelayUrl(input.relayUrl) : null;
+    const urlChanged = url !== s.relay.url;
+    if (url && urlChanged) await new RelayClient(url, s.identity).health();
+    let registeredUrl = urlChanged ? null : s.relay.registeredUrl;
+    if (url && adminToken && registeredUrl !== url) {
+      try {
+        await new RelayClient(url, s.identity).register({ adminToken, label: name || "owner" });
+      } catch (error) {
+        throw adminTokenError(error);
+      }
+      registeredUrl = url;
     }
+    s.profile.name = name;
+    s.relay = { url, adminToken, registeredUrl };
     this.restartPolling();
     this.changed();
     return this.publicState();
@@ -224,7 +243,9 @@ export class PeerService {
       await relay.register({ adminToken: s.relay.adminToken, label: s.profile.name });
       s.relay.registeredUrl = s.relay.url;
     }
-    const { invite, expiresAt } = await relay.createInvite(s.relay.adminToken, label ?? "");
+    const { invite, expiresAt } = await relay.createInvite(s.relay.adminToken, label ?? "").catch((error) => {
+      throw adminTokenError(error);
+    });
     s.invites.push({ id: newId(), token: invite, label: label ?? "", createdAt: new Date().toISOString(), expiresAt });
     this.changed();
     const code = { v: 1, r: s.relay.url, t: invite, n: s.profile.name, k: s.identity.signPub, b: s.identity.boxPub };

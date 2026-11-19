@@ -52,7 +52,7 @@ export function SettingsScreen({ theme }: PluginSurfaceProps) {
           />
           <SettingsInput
             label="Admin token"
-            hint={state.relay.hasAdminToken ? "Saved. Type a new one to replace it, or a single space to remove it." : "Only on the relay owner's install. Enables invites."}
+            hint={state.relay.hasAdminToken ? "Saved. Type a new one to replace it, or a single space to remove it." : "The relay's RELAY_ADMIN_TOKEN, only on the owner's install. Not an invite code: paste those on the Peers screen under Join."}
             secureTextEntry
             onChangeText={(token) => (draft.current.adminToken = token)}
           />
