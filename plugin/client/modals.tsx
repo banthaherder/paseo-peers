@@ -1,5 +1,5 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import { useRpc, useWorkspace } from "@getpaseo/plugin/client";
+import { useRpc } from "@getpaseo/plugin/client";
 import { Icon, Modal, TextInput, copyText, useToast } from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -34,11 +34,15 @@ function Chip({ theme, icon, text }: { theme: PluginTheme; icon: string; text: s
 
 const statusText = (status: string) => (status === "running" ? "busy" : status);
 
-/** One agent, identified by its workspace, project, branch and workspace labels. Hides itself when it doesn't match `query`. */
+/**
+ * One agent, identified by its workspace, project, branch and workspace labels. Hides itself when it
+ * doesn't match `query`. Rendered inside a Modal, which sits outside the plugin host, so it must not
+ * call plugin state hooks (useWorkspace, useAgent, ...): everything comes from the server summary.
+ */
 function AgentRow(props: { theme: PluginTheme; agent: AgentSummary; query: string; pending: boolean; disabled: boolean; onPress(): void }) {
   const { theme, agent } = props;
   const c = theme.colors;
-  const labels = useWorkspace(agent.workspaceId ?? "none", (workspace) => workspace.labels) ?? [];
+  const labels = agent.labels;
   const heading = agent.workspaceName || agent.title;
   const subtitle = agent.workspaceName && agent.workspaceName !== agent.title ? agent.title : null;
   const query = props.query.trim().toLowerCase();

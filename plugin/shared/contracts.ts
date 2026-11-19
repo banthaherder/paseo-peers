@@ -153,6 +153,8 @@ export const agentSummarySchema = z.object({
   workspaceName: z.string().nullable(),
   projectName: z.string().nullable(),
   branch: z.string().nullable(),
+  /** Workspace label names (colors aren't available to plugins). */
+  labels: z.array(z.string()),
   lastActivityAt: z.string().nullable(),
 });
 export type AgentSummary = z.infer<typeof agentSummarySchema>;

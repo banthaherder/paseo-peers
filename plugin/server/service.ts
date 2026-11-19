@@ -66,6 +66,21 @@ type AgentRecord = {
   updatedAt?: string | null;
 };
 
+type PageResult<T> = { entries: T[]; pageInfo?: { nextCursor?: string | null; hasMore?: boolean } | null };
+
+/** Follows list pagination (bounded) so long agent or workspace lists aren't cut off. */
+async function collectPages<T>(fetchPage: (page: { limit: number; cursor?: string }) => Promise<PageResult<T>>): Promise<T[]> {
+  const all: T[] = [];
+  let cursor: string | undefined;
+  for (let i = 0; i < 20; i++) {
+    const result = await fetchPage(cursor ? { limit: 200, cursor } : { limit: 200 });
+    all.push(...result.entries);
+    if (!result.pageInfo?.hasMore || !result.pageInfo.nextCursor) break;
+    cursor = result.pageInfo.nextCursor;
+  }
+  return all;
+}
+
 type AgentProjectPlacement = {
   projectName?: string | null;
   workspaceName?: string | null;
@@ -725,10 +740,23 @@ export class PeerService {
   // ---------------------------------------------------------------- agents
 
   async listAgents(): Promise<AgentSummary[]> {
-    const { entries } = await this.api().agents.list();
+    const api = this.api();
+    const entries = await collectPages<{ agent: AgentRecord; project?: AgentProjectPlacement | null }>((page) =>
+      api.agents.list({ page }) as Promise<PageResult<{ agent: AgentRecord; project?: AgentProjectPlacement | null }>>,
+    );
+    // Labels live on workspaces. Plugin UI can't read them inside a modal, so join them here.
+    const labelsByWorkspace = new Map<string, string[]>();
+    try {
+      const workspaces = await collectPages<{ id: string; labels?: string[] | null }>((page) =>
+        api.workspaces.list({ page }) as Promise<PageResult<{ id: string; labels?: string[] | null }>>,
+      );
+      for (const workspace of workspaces) labelsByWorkspace.set(workspace.id, workspace.labels ?? []);
+    } catch (error) {
+      console.error("[paseo-peers] couldn't read workspace labels", error);
+    }
     const home = homedir();
     const rank: Record<string, number> = { running: 0, idle: 0, initializing: 1, error: 2, closed: 3 };
-    return (entries as Array<{ agent: AgentRecord; project?: AgentProjectPlacement | null }>)
+    return entries
       .filter(({ agent }) => !agent.archivedAt && !agent.background)
       .map(({ agent, project }) => ({
         id: agent.id,
@@ -740,6 +768,7 @@ export class PeerService {
         workspaceName: project?.workspaceName || null,
         projectName: project?.projectName || null,
         branch: project?.checkout?.currentBranch || null,
+        labels: (agent.workspaceId && labelsByWorkspace.get(agent.workspaceId)) || [],
         lastActivityAt: agent.lastUserMessageAt ?? agent.updatedAt ?? null,
       }))
       .sort(
